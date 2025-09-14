@@ -44,6 +44,23 @@ public class SubjectController {
         return subjectRepository.findByUser(loggedUser);
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<Subject> getSubjectByTitle(@RequestParam String title,
+                                                     @AuthenticationPrincipal User loggedUser) {
+        Subject subject = subjectRepository.findByTitle(title);
+
+        if (subject == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        if (!subject.getUser().getId().equals(loggedUser.getId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        return ResponseEntity.ok(subject);
+    }
+
+
     @PutMapping("/{id}")
     public ResponseEntity<Subject> updateSubject(@PathVariable Long id,
                                                  @RequestBody Subject updatedSubject,
@@ -63,7 +80,6 @@ public class SubjectController {
 
         return ResponseEntity.ok(saved);
     }
-
 
 
     @DeleteMapping("/{id}")

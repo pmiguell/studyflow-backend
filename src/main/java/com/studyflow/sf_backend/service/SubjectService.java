@@ -19,6 +19,10 @@ public class SubjectService {
         return subjectRepository.findByUserId(userId);
     }
 
+    public Subject getSubjectByTitle(String title) {
+        return subjectRepository.findByTitle(title);
+    }
+
     public Subject createSubject(Long userId, Subject subject) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found: " + userId));
