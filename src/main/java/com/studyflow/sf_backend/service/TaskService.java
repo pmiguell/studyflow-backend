@@ -6,7 +6,6 @@ import com.studyflow.sf_backend.repository.SubjectRepository;
 import com.studyflow.sf_backend.repository.TaskRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -30,6 +29,7 @@ public class TaskService {
         newTask.setDeadline(task.getDeadline());
         newTask.setCompleted(task.isCompleted());
         newTask.setSubject(subject);
+        newTask.setStatus(task.getStatus() != null ? task.getStatus() : Task.TaskStatus.NAO_INICIADO);
 
         return taskRepository.save(newTask);
     }
@@ -42,7 +42,7 @@ public class TaskService {
         taskToUpdate.setDescription(newTask.getDescription());
         taskToUpdate.setCompleted(newTask.isCompleted());
         taskToUpdate.setDeadline(newTask.getDeadline());
-        taskToUpdate.setStatus(newTask.getStatus()); // 🔹 Faltava isso!
+        taskToUpdate.setStatus(newTask.getStatus());
 
         return taskRepository.save(taskToUpdate);
     }
