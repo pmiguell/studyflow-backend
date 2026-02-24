@@ -2,6 +2,7 @@ package com.studyflow.sf_backend.entity;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.studyflow.sf_backend.enums.TaskStatus;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -28,14 +29,9 @@ public class Task {
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate deadline;
 
-    private boolean completed = false;
+    private boolean isCompleted = false;
 
     @Enumerated(EnumType.STRING)
     private TaskStatus status = TaskStatus.NAO_INICIADO;
 
-    public enum TaskStatus {
-        NAO_INICIADO,
-        EM_ANDAMENTO,
-        CONCLUIDO
-    }
 }

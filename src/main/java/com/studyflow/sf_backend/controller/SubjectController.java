@@ -1,16 +1,20 @@
 package com.studyflow.sf_backend.controller;
 
-import com.studyflow.sf_backend.entity.Subject;
-import com.studyflow.sf_backend.repository.SubjectRepository;
-import com.studyflow.sf_backend.repository.UserRepository;
+import com.studyflow.sf_backend.dto.request.SubjectRequestDTO;
+import com.studyflow.sf_backend.dto.response.SubjectResponseDTO;
 import com.studyflow.sf_backend.service.SubjectService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import com.studyflow.sf_backend.entity.User;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,81 +22,99 @@ import java.util.List;
 @RestController
 @RequestMapping("/subjects")
 @RequiredArgsConstructor
+@Tag(name = "Subjects", description = "Endpoints for managing study subjects")
+@SecurityRequirement(name = "Bearer Authentication")
 public class SubjectController {
 
-    private final SubjectRepository subjectRepository;
-    private final UserRepository userRepository;
+    private final SubjectService subjectService;
 
     @PostMapping
-    public ResponseEntity<Subject> createSubject(@RequestBody Subject subject,
-                                                 @AuthenticationPrincipal User loggedUser) {
-        // Associa automaticamente o usuário logado
-        subject.setUser(loggedUser);
+    @Operation(summary = "Create a new subject", description = "Creates a new subject for the authenticated user")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Subject created successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid input data"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<SubjectResponseDTO> createSubject(
+            @RequestBody
+            @Parameter(description = "Subject creation details", required = true)
+            SubjectRequestDTO subjectRequestDTO,
+            @AuthenticationPrincipal User loggedUser) {
 
-        // Salva no banco
-        Subject saved = subjectRepository.save(subject);
-        return ResponseEntity.ok(saved);
+        SubjectResponseDTO response = subjectService.createSubject(loggedUser, subjectRequestDTO);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping
-    public List<Subject> getSubjects() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String email = auth.getName(); // se você usa email como username
-        User loggedUser = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+    @Operation(summary = "Get all subjects", description = "Retrieves all subjects for the authenticated user")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Subjects retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<List<SubjectResponseDTO>> getSubjects(
+            @AuthenticationPrincipal User loggedUser) {
 
-        return subjectRepository.findByUser(loggedUser);
+        List<SubjectResponseDTO> responses = subjectService.getSubjectsByUser(loggedUser);
+        return ResponseEntity.ok(responses);
     }
 
     @GetMapping("/search")
-    public ResponseEntity<Subject> getSubjectByTitle(@RequestParam String title,
-                                                     @AuthenticationPrincipal User loggedUser) {
-        Subject subject = subjectRepository.findByTitle(title);
-
-        if (subject == null) {
-            return ResponseEntity.notFound().build();
-        }
-
-        if (!subject.getUser().getId().equals(loggedUser.getId())) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
-
-        return ResponseEntity.ok(subject);
+    @Operation(summary = "Search subject by title", description = "Searches for a subject by its title")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Subject found"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "404", description = "Subject not found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<SubjectResponseDTO> getSubjectByTitle(
+            @RequestParam
+            @Parameter(description = "Subject title to search", required = true, example = "Mathematics")
+            String title,
+            @AuthenticationPrincipal User loggedUser) {
+        SubjectResponseDTO response = subjectService.getSubjectByTitle(title, loggedUser);
+        return ResponseEntity.ok(response);
     }
 
 
     @PutMapping("/{id}")
-    public ResponseEntity<Subject> updateSubject(@PathVariable Long id,
-                                                 @RequestBody Subject updatedSubject,
-                                                 @AuthenticationPrincipal User loggedUser) {
-        Subject subject = subjectRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Matéria não encontrada"));
-
-        if (!subject.getUser().getId().equals(loggedUser.getId())) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
-
-        subject.setTitle(updatedSubject.getTitle());
-        Subject saved = subjectRepository.save(subject);
-
-        // força o carregamento das tasks
-        saved.getTasks().size();
-
-        return ResponseEntity.ok(saved);
+    @Operation(summary = "Update a subject", description = "Updates an existing subject")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Subject updated successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid input data"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "404", description = "Subject not found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<SubjectResponseDTO> updateSubject(
+            @PathVariable
+            @Parameter(description = "Subject ID", required = true, example = "1")
+            Long id,
+            @RequestBody
+            @Parameter(description = "Updated subject details", required = true)
+            SubjectRequestDTO dto,
+            @AuthenticationPrincipal User loggedUser) {
+        SubjectResponseDTO response = subjectService.updateSubject(id, dto, loggedUser);
+        return ResponseEntity.ok(response);
     }
 
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteSubject(@PathVariable Long id,
-                                              @AuthenticationPrincipal User loggedUser) {
-        Subject subject = subjectRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Matéria não encontrada"));
-
-        if (!subject.getUser().getId().equals(loggedUser.getId())) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
-
-        subjectRepository.delete(subject);
+    @Operation(summary = "Delete a subject", description = "Deletes a subject and all its associated tasks and summaries")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Subject deleted successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "404", description = "Subject not found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<Void> deleteSubject(
+            @PathVariable
+            @Parameter(description = "Subject ID", required = true, example = "1")
+            Long id,
+            @AuthenticationPrincipal User loggedUser) {
+        subjectService.deleteSubject(id, loggedUser);
         return ResponseEntity.noContent().build();
     }
+
 }

@@ -1,15 +1,21 @@
 package com.studyflow.sf_backend.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class EmailService {
-    @Autowired
     private JavaMailSender mailSender;
 
+    /**
+     * Sends a verification code to the user's email address.
+     *
+     * @param toEmail the recipient email address
+     * @param verificationCode the code to send (valid for 10 minutes)
+     */
     public void sendVerificationCode(String toEmail, String verificationCode) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(toEmail);
