@@ -8,6 +8,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Schema(description = "Subject creation or update details")
 public record SubjectRequestDTO(
         @Schema(description = "Title of the subject", example = "Advanced Mathematics")
-        String title
+        String title,
+
+        @Schema(description = "Color code for the subject", example = "#ff0000")
+        String color
 ) {
 }

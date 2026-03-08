@@ -1,7 +1,9 @@
 package com.studyflow.sf_backend.service;
 
+import com.studyflow.sf_backend.dto.request.ForgotPasswordRequestDTO;
 import com.studyflow.sf_backend.dto.request.LoginRequestDTO;
 import com.studyflow.sf_backend.dto.request.RegisterRequestDTO;
+import com.studyflow.sf_backend.dto.request.ResetPasswordRequestDTO;
 import com.studyflow.sf_backend.dto.request.VerifyUserRequest;
 import com.studyflow.sf_backend.entity.User;
 import com.studyflow.sf_backend.repository.UserRepository;
@@ -55,10 +57,10 @@ public class AuthService {
      */
     public String login(LoginRequestDTO loginRequestDTO) {
         User user = userRepository.findByEmail(loginRequestDTO.email())
-                .orElseThrow(() -> new RuntimeException("User not found."));
+                .orElseThrow(() -> new RuntimeException("Usuário e/ou senha inválido(s)."));
 
         if(!passwordEncoder.matches(loginRequestDTO.password(), user.getPassword())) {
-            throw new RuntimeException("Incorrect password.");
+            throw new RuntimeException("Usuário e/ou senha inválido(s).");
         }
 
         if(!user.isVerified()){
@@ -88,6 +90,51 @@ public class AuthService {
         }
 
         user.setVerified(true);
+        // We can clear the code after verification for security
+        user.setVerificationCode(null);
+        userRepository.save(user);
+    }
+
+    /**
+     * Initiates the password recovery process.
+     *
+     * @param requestDTO contains email of the user
+     */
+    public void forgotPassword(ForgotPasswordRequestDTO requestDTO) {
+        // Find user by email, but don't throw an error to prevent email enumeration
+        userRepository.findByEmail(requestDTO.email()).ifPresent(user -> {
+            String code = String.valueOf(new Random().nextInt(900000) + 100000);
+            user.setVerificationCode(code);
+            user.setCodeExpirationDate(LocalDateTime.now().plusMinutes(10));
+            
+            userRepository.save(user);
+            emailService.sendPasswordRecoveryCode(user.getEmail(), code);
+        });
+    }
+
+    /**
+     * Resets the user's password using the recovery code.
+     *
+     * @param requestDTO contains email, code, and new password
+     */
+    public void resetPassword(ResetPasswordRequestDTO requestDTO) {
+        User user = userRepository.findByEmail(requestDTO.email())
+                .orElseThrow(() -> new RuntimeException("User not found or invalid recovery attempt."));
+
+        if (!user.isVerified()) {
+            throw new RuntimeException("User email is not verified.");
+        }
+
+        if (user.getVerificationCode() == null || !user.getVerificationCode().equals(requestDTO.code())) {
+            throw new RuntimeException("Invalid recovery code.");
+        }
+
+        if (user.getCodeExpirationDate().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Recovery code has expired.");
+        }
+
+        user.setPassword(passwordEncoder.encode(requestDTO.newPassword()));
+        user.setVerificationCode(null); // Clear the code after successful reset
         userRepository.save(user);
     }
 }

@@ -29,7 +29,7 @@ public class TaskService {
      * @return list of TaskResponseDTO for all user tasks
      */
     public List<TaskResponseDTO> getTasksByUser(User user) {
-        return taskRepository.findBySubject_User(user)
+        return taskRepository.findAllByUserIncludingSubjectTasks(user)
                 .stream()
                 .map(TaskResponseDTO::new)
                 .collect(Collectors.toList());
@@ -45,10 +45,12 @@ public class TaskService {
      * @throws ResponseStatusException with HTTP 404 if subject not found or HTTP 403 if user does not own the subject
      */
     public TaskResponseDTO createTask(Long subjectId, TaskRequestDTO dto, User user) {
-        Subject subject = subjectRepository.findById(subjectId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Matéria não encontrada"));
-
-        verifySubjectOwnership(subject, user);
+        Subject subject = null;
+        if (subjectId != null) {
+            subject = subjectRepository.findById(subjectId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Matéria não encontrada"));
+            verifySubjectOwnership(subject, user);
+        }
 
         Task newTask = new Task();
         newTask.setTitle(dto.title());
@@ -56,6 +58,7 @@ public class TaskService {
         newTask.setDeadline(dto.deadline());
         newTask.setCompleted(dto.completed());
         newTask.setSubject(subject);
+        newTask.setUser(user);
         newTask.setStatus(dto.status() != null ? dto.status() : TaskStatus.NAO_INICIADO);
 
         Task saved = taskRepository.save(newTask);
@@ -74,13 +77,23 @@ public class TaskService {
     public TaskResponseDTO updateTask(Long id, TaskRequestDTO dto, User user) {
         Task taskToUpdate = getTaskEntityById(id);
 
-        verifySubjectOwnership(taskToUpdate.getSubject(), user);
+        verifyTaskOwnership(taskToUpdate, user);
 
         taskToUpdate.setTitle(dto.title());
         taskToUpdate.setDescription(dto.description());
         taskToUpdate.setCompleted(dto.completed());
         taskToUpdate.setDeadline(dto.deadline());
         taskToUpdate.setStatus(dto.status());
+
+        if (dto.subjectId() != null) {
+            Subject subject = subjectRepository.findById(dto.subjectId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Matéria não encontrada"));
+            verifySubjectOwnership(subject, user);
+            taskToUpdate.setSubject(subject);
+        } else {
+            taskToUpdate.setSubject(null);
+            taskToUpdate.setUser(user);
+        }
 
         Task saved = taskRepository.save(taskToUpdate);
         return new TaskResponseDTO(saved);
@@ -97,7 +110,7 @@ public class TaskService {
     public void deleteTask(Long id, User user) {
         Task task = getTaskEntityById(id);
 
-        verifySubjectOwnership(task.getSubject(), user);
+        verifyTaskOwnership(task, user);
 
         taskRepository.delete(task);
     }
@@ -107,9 +120,17 @@ public class TaskService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tarefa não encontrada"));
     }
 
-    private void verifySubjectOwnership(Subject subject, User user) {
-        if (!subject.getUser().getId().equals(user.getId())) {
+    private void verifyTaskOwnership(Task task, User user) {
+        if (task.getSubject() != null) {
+            verifySubjectOwnership(task.getSubject(), user);
+        } else if (task.getUser() != null && !task.getUser().getId().equals(user.getId())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Você não tem permissão para acessar ou modificar esta tarefa");
+        }
+    }
+
+    private void verifySubjectOwnership(Subject subject, User user) {
+        if (subject != null && !subject.getUser().getId().equals(user.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Você não tem permissão para acessar ou modificar esta matéria/tarefa");
         }
     }
 
