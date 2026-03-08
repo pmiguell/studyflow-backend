@@ -40,7 +40,7 @@ public record TaskResponseDTO(
                 task.getDeadline(),
                 task.isCompleted(),
                 task.getStatus(),
-                task.getSubject().getId()
+                task.getSubject() != null ? task.getSubject().getId() : null
         );
     }
 }

@@ -1,6 +1,7 @@
 package com.studyflow.sf_backend.entity;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.studyflow.sf_backend.enums.TaskStatus;
 import jakarta.persistence.*;
@@ -24,6 +25,11 @@ public class Task {
     @JoinColumn(name = "subject_id")
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "tasks", "user"})
     private Subject subject;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    @JsonIgnore
+    private User user;
 
 
     @JsonFormat(pattern = "yyyy-MM-dd")
