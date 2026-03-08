@@ -39,6 +39,22 @@ public class TaskController {
         return ResponseEntity.ok(taskService.getTasksByUser(loggedUser));
     }
 
+    @PostMapping
+    @Operation(summary = "Create a general task", description = "Creates a new task without explicitly requiring a subject in the path")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Task created successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid input data"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<TaskResponseDTO> createGeneralTask(
+            @RequestBody
+            @Parameter(description = "Task creation details", required = true)
+            TaskRequestDTO dto,
+            @AuthenticationPrincipal User loggedUser) {
+        return ResponseEntity.ok(taskService.createTask(dto.subjectId(), dto, loggedUser));
+    }
+
     @PostMapping("/subject/{subjectId}")
     @Operation(summary = "Create a new task", description = "Creates a new task for a specific subject")
     @ApiResponses(value = {

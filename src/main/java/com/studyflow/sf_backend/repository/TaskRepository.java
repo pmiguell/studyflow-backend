@@ -7,8 +7,13 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
 @Repository
 public interface TaskRepository extends JpaRepository<Task, Long> {
-    List<Task> findBySubject_User(User user);
 
+    @Query("SELECT t FROM Task t LEFT JOIN t.subject s WHERE t.user = :user OR s.user = :user")
+    List<Task> findAllByUserIncludingSubjectTasks(@Param("user") User user);
+    
 }
