@@ -22,6 +22,9 @@ public class Subject {
     @JoinColumn(name = "user_id")
     private User user;
 
+    @Column(name = "color", nullable = true)
+    private String color = "#8ed1fc";
+
     @OneToMany(mappedBy = "subject", cascade = CascadeType.ALL)
     private List<Task> tasks = new ArrayList<>();
 

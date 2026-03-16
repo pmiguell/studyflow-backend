@@ -63,6 +63,7 @@ public class SubjectService {
     public SubjectResponseDTO createSubject(User user, SubjectRequestDTO dto) {
         Subject subject = new Subject();
         subject.setTitle(dto.title());
+        subject.setColor(dto.color() != null ? dto.color() : "#8ed1fc");
         subject.setUser(user);
 
         Subject saved = subjectRepository.save(subject);
@@ -84,6 +85,9 @@ public class SubjectService {
         verifySubjectOwnership(subject, user);
 
         subject.setTitle(dto.title());
+        if (dto.color() != null) {
+            subject.setColor(dto.color());
+        }
         Subject saved = subjectRepository.save(subject);
 
         return new SubjectResponseDTO(saved);

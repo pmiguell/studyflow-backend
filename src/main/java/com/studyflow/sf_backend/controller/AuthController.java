@@ -1,7 +1,9 @@
 package com.studyflow.sf_backend.controller;
 
+import com.studyflow.sf_backend.dto.request.ForgotPasswordRequestDTO;
 import com.studyflow.sf_backend.dto.request.LoginRequestDTO;
 import com.studyflow.sf_backend.dto.request.RegisterRequestDTO;
+import com.studyflow.sf_backend.dto.request.ResetPasswordRequestDTO;
 import com.studyflow.sf_backend.dto.request.VerifyUserRequest;
 import com.studyflow.sf_backend.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -55,8 +57,12 @@ public class AuthController {
             @RequestBody
             @Parameter(description = "User login credentials", required = true)
             LoginRequestDTO loginRequestDTO) {
-        String token = authService.login(loginRequestDTO);
-        return ResponseEntity.ok(Map.of("token", token));
+        try {
+            String token = authService.login(loginRequestDTO);
+            return ResponseEntity.ok(Map.of("token", token));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(401).body(e.getMessage());
+        }
     }
 
     @PostMapping("/verify")
@@ -72,5 +78,32 @@ public class AuthController {
             VerifyUserRequest verifyUserRequest) {
         authService.verify(verifyUserRequest);
         return ResponseEntity.ok("User verified successfully.");
+    }
+
+    @PostMapping("/forgot-password")
+    @Operation(summary = "Forgot password", description = "Initiates password recovery process by sending a code to user's email")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Recovery email sent successfuly (or ignored if email not found)"),
+            @ApiResponse(responseCode = "400", description = "Invalid request format")
+    })
+    public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordRequestDTO requestDTO) {
+        authService.forgotPassword(requestDTO);
+        return ResponseEntity.ok("If an account with this email exists, a password recovery code has been sent.");
+    }
+
+    @PostMapping("/reset-password")
+    @Operation(summary = "Reset password", description = "Resets user password using the recovery code sent via email")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Password reset successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid code, expired code, or missing parameters"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequestDTO requestDTO) {
+        try {
+            authService.resetPassword(requestDTO);
+            return ResponseEntity.ok("Password reset successfully.");
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }

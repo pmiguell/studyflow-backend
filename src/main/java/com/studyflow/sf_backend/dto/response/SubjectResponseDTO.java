@@ -12,11 +12,14 @@ public record SubjectResponseDTO(
         Long id,
 
         @Schema(description = "Title of the subject", example = "Advanced Mathematics")
-        String title
+        String title,
+
+        @Schema(description = "Color of the subject", example = "#ff0000")
+        String color
 ) {
 
     public SubjectResponseDTO(Subject subject) {
-        this(subject.getId(), subject.getTitle());
+        this(subject.getId(), subject.getTitle(), subject.getColor());
     }
 
 }

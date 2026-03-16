@@ -23,5 +23,8 @@ public record TaskRequestDTO(
         boolean completed,
 
         @Schema(description = "Current status of the task")
-        TaskStatus status
+        TaskStatus status,
+
+        @Schema(description = "Optional ID of the subject this task belongs to", example = "1")
+        Long subjectId
 ) {}
