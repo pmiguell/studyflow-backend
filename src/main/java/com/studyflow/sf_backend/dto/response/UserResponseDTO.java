@@ -19,7 +19,7 @@ public record UserResponseDTO(
 ) {
 
     public UserResponseDTO(User user) {
-        this(user.getId(), user.getUsername(), user.getEmail());
+        this(user.getId(), user.getActualUsername(), user.getEmail());
     }
 
 }
