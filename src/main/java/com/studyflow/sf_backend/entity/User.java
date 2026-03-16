@@ -72,4 +72,8 @@ public class User implements UserDetails {
     public boolean isEnabled() {
         return isVerified; // só permite login se o email estiver verificado
     }
+
+    public String getActualUsername() {
+        return this.username;
+    }
 }

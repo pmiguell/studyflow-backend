@@ -27,8 +27,8 @@ public class AuthService {
      * @throws RuntimeException if email is already registered
      */
     public void register(RegisterRequestDTO registerRequestDTO) {
-        if(userRepository.findByEmail(registerRequestDTO.email()).isPresent()) {
-            throw new RuntimeException("Email already registered.");
+        if(userRepository.findByEmail(registerRequestDTO.email()).isPresent() || userRepository.findByUsername(registerRequestDTO.username()).isPresent()) {
+            throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Email or Username already registered.");
         }
 
         String code = String.valueOf(new Random().nextInt(900000) + 100000);
